@@ -283,19 +283,3 @@ The evaluation matrix assesses the system’s performance on the test queries us
      - **Real LLM**: Replace rule-based `generate_answer` with an LLM for more natural responses.
 
 
-## Troubleshooting
-
-- **Dependency Issues**:
-  ```bash
-  conda activate rag_env
-  pip install -r requirements.txt
-  ```
-
-- **Port Conflict**:
-  - Change port to 8001 in `rag_system.py` if 8000 is in use:
-    ```python
-    uvicorn.run(app, host="0.0.0.0", port=8001)
-    ```
-
-- **Bengali Text Display**:
-  - Ensure VS Code terminal and browser support Bengali Unicode (install Noto Sans Bengali).
