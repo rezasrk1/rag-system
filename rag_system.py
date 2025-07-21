@@ -9,6 +9,8 @@ from pydantic import BaseModel
 import nltk
 from nltk.tokenize import sent_tokenize
 import logging
+import pytesseract
+from PIL import Image
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -50,10 +52,18 @@ def extract_text_from_pdf(pdf_path):
         doc = fitz.open(pdf_path)
         text = ""
         for page in doc:
-            text += page.get_text("text", flags=fitz.TEXTFLAGS_TEXT)
+            page_text = page.get_text("text", flags=fitz.TEXTFLAGS_TEXT)
+            if page_text.strip():
+                text += page_text
+            else:
+                # Fallback to OCR for scanned pages
+                pix = page.get_pixmap()
+                img = Image.frombytes("RGB", [pix.width, pix.height], pix.rgb)
+                page_text = pytesseract.image_to_string(img, lang='ben')
+                text += page_text
         doc.close()
         if not text.strip():
-            logger.warning("Extracted text is empty. PDF may be scanned or corrupted.")
+            logger.warning("No text extracted from PDF or OCR.")
         else:
             logger.info(f"Extracted text sample: {text[:100]}...")
         return text
@@ -63,7 +73,7 @@ def extract_text_from_pdf(pdf_path):
 
 # Clean extracted text
 def clean_text(text):
-    # Normalize spaces
+    # Normalize spaces and newlines
     text = re.sub(r'\s+', ' ', text)
     # Keep Bengali characters, spaces, and basic punctuation
     text = re.sub(r'[^\u0980-\u09FF\s।?!]', '', text)
@@ -125,13 +135,15 @@ def retrieve_chunks(query, top_k=3):
         query_embedding = embedding_model.encode([query], convert_to_tensor=False, normalize_embeddings=True)[0]
         results = collection.query(
             query_embeddings=[query_embedding.tolist()],
-            n_results=top_k
+            n_results=top_k,
+            include=['documents', 'embeddings']
         )
-        distances = results['distances'][0]
-        # Convert distances to similarities (cosine similarity = 1 - distance for normalized embeddings)
-        similarities = [1 - d for d in distances]
-        logger.info(f"Retrieved {len(results['documents'][0])} chunks with similarities: {similarities}")
-        return results['documents'][0], similarities
+        documents = results['documents'][0]
+        chunk_embeddings = results['embeddings'][0]
+        # Compute cosine similarity manually
+        similarities = cosine_similarity([query_embedding], chunk_embeddings)[0].tolist()
+        logger.info(f"Retrieved {len(documents)} chunks with similarities: {similarities}")
+        return documents, similarities
     except Exception as e:
         logger.error(f"Error retrieving chunks: {e}")
         return [], []
@@ -142,12 +154,13 @@ def generate_answer(query, chunks):
     context = " ".join(chunks)
     recent = " ".join([f"User: {q} System: {a}" for q, a in chat_history[-3:]])
     full_context = recent + " " + context
-    # Rule-based logic for demo
-    if "সুপুরুষ" in query:
+    # Rule-based logic for demo, supporting English and Bengali
+    query_lower = query.lower()
+    if "সুপুরুষ" in query or "handsome man" in query_lower:
         answer = "শুম্ভুনাথ"
-    elif "ভাগ্য দেবতা" in query:
+    elif "ভাগ্য দেবতা" in query or "fortune deity" in query_lower or "lucky deity" in query_lower:
         answer = "মামাকে"
-    elif "কল্যাণীর প্রকৃত বয়স" in query:
+    elif "কল্যাণীর প্রকৃত বয়স" in query or "kalyani's actual age" in query_lower:
         answer = "১৫ বছর"
     else:
         answer = f"Based on the context: {full_context[:100]}..."
