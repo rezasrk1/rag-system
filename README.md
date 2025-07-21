@@ -80,6 +80,7 @@ This repository fulfills the submission requirements by providing:
      INFO:     Application startup complete.
      INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
      ```
+<img width="1920" height="1080" alt="Screenshot (871)" src="https://github.com/user-attachments/assets/20833796-1ea1-42ec-80ad-27b200ddca0d" />
 
 5. **Test the API**:
    - Check the root endpoint: Visit `http://127.0.0.1:8000/` in a browser (returns `{"message": "RAG system is running!"}`).
@@ -191,6 +192,10 @@ Below are the test queries with their expected outputs. Screenshots of the outpu
 ### Terminal Output
 **Description**: Logs showing PDF processing, chunking, and server startup.
 **Screenshot**: [Add screenshot file, e.g., `screenshots/terminal_output.png`]
+
+
+<img width="1920" height="1080" alt="Screenshot (869)" src="https://github.com/user-attachments/assets/05d6a544-68bc-4e1f-a867-cb0b698c0d12" />
+
 
 ## API Documentation
 **Endpoint**: `POST /query`
